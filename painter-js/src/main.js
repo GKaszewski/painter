@@ -1,5 +1,9 @@
 import io from 'socket.io-client';
 
+// Determine the WebSocket protocol based on the page protocol
+const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+// Use the same host as the page
+const wsHost = window.location.host;
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const colorPicker = document.getElementById('color-picker');
@@ -9,7 +13,9 @@ const pixelCooldown = 60 * 1000; // 1 minute
 
 let lastPixelTime = parseInt(localStorage.getItem('lastPixelTime') || '0');
 
-const socket = io('ws://localhost:3000');
+const socket = io(`${wsProtocol}//${wsHost}`, {
+  transports: ['websocket'],
+});
 
 socket.on('connect', () => {
   console.log('connect');
