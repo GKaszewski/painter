@@ -71,6 +71,7 @@ async fn on_connect(socket: SocketRef, state: Arc<AppState>) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenv::dotenv().ok();
     tracing::subscriber::set_global_default(FmtSubscriber::new())?;
     let (layer, io) = SocketIo::new_layer();
 
@@ -85,24 +86,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tokio::spawn(on_connect(socket, app_state_for_ns.clone()));
     });
 
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+    let address = std::env::var("ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let port: u16 = std::env::var("PORT")
+        .unwrap_or_else(|_| "3000".to_string())
+        .parse()
+        .expect("Invalid port");
+    let enable_cors = std::env::var("ENABLE_CORS").unwrap_or_else(|_| "true".to_string()) == "true";
+
+    let cors = if enable_cors {
+        Some(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any),
+        )
+    } else {
+        None
+    };
 
     let app = Router::new()
-        .fallback_service(ServeDir::new("painter-js/dist"))
-        .layer(layer)
-        .layer(cors);
+        .fallback_service(ServeDir::new("dist"))
+        .layer(layer);
 
-    info!("Starting server");
+    let app = if let Some(cors) = cors {
+        app.layer(cors)
+    } else {
+        app
+    };
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
-    axum::serve(
-        listener,
-        app.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .await?;
+    let server_address = format!("{}:{}", address, port);
+    info!("Starting server on {}", server_address);
+    let listener = tokio::net::TcpListener::bind(server_address).await?;
+    axum::serve(listener, app.into_make_service()).await?;
 
     Ok(())
 }
