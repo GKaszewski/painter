@@ -83,6 +83,15 @@ async fn on_connect(socket: SocketRef, state: Arc<AppState>) {
         info!("Socket disconnected: {:?}", socket.id);
         let mut soldiers = app_state_for_disconnect.soldiers.lock().unwrap();
         soldiers.remove(&socket.id.to_string());
+
+        info!("Soldiers: {:?}", soldiers.len());
+
+        let mut last_update = app_state_for_disconnect.last_update.lock().unwrap();
+        let socket_id = socket.id.to_string();
+        last_update.remove(&socket_id);
+
+        info!("Last update: {:?}", last_update.len());
+
         let soldiers_num = soldiers.len();
         socket
             .broadcast()
