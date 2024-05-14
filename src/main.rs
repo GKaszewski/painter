@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::{Arc, Mutex},
 };
 
@@ -28,6 +28,7 @@ struct PixelUpdate {
 struct AppState {
     canvas: Mutex<Vec<Vec<u32>>>,
     last_update: Mutex<HashMap<String, DateTime<Utc>>>,
+    soldiers: Mutex<HashSet<String>>,
 }
 
 async fn on_connect(socket: SocketRef, state: Arc<AppState>) {
@@ -36,15 +37,26 @@ async fn on_connect(socket: SocketRef, state: Arc<AppState>) {
     let canvas_state = state.canvas.lock().unwrap();
     let serialized_canvas = serde_json::to_string(&*canvas_state).unwrap();
     socket.emit("init-canvas", &serialized_canvas).ok();
+    let socket_id = socket.id.to_string();
 
-    let canvas_state = state.clone();
+    let mut soldiers = state.soldiers.lock().unwrap();
+    soldiers.insert(socket_id.clone());
+    let soldiers_num = soldiers.len();
+    socket.emit("current_soldiers", &soldiers_num).ok();
+    socket
+        .broadcast()
+        .emit("current_soldiers", &soldiers_num)
+        .ok();
+
+    let app_state = state.clone();
+    let app_state_for_disconnect = state.clone();
+
     socket.on(
         "place-pixel",
         move |socket: SocketRef, Data::<PixelUpdate>(update), Bin(_bin)| {
             let now = Utc::now();
-            let mut last_update = canvas_state.last_update.lock().unwrap();
+            let mut last_update = app_state.last_update.lock().unwrap();
 
-            let socket_id = socket.id.to_string();
             if let Some(&last_time) = last_update.get(&socket_id) {
                 if now < last_time + Duration::minutes(1) {
                     let _ = socket.emit(
@@ -58,7 +70,7 @@ async fn on_connect(socket: SocketRef, state: Arc<AppState>) {
             last_update.insert(socket_id.clone(), now);
 
             info!("Received pixel update: {:?}", update);
-            let mut canvas = canvas_state.canvas.lock().unwrap();
+            let mut canvas = app_state.canvas.lock().unwrap();
             canvas[update.y as usize][update.x as usize] = update.color;
 
             info!("Emitting pixel update");
@@ -66,6 +78,17 @@ async fn on_connect(socket: SocketRef, state: Arc<AppState>) {
             socket.broadcast().emit("pixel-updated", &update).ok(); // Send to all other users
         },
     );
+
+    socket.on_disconnect(move |socket: SocketRef| {
+        info!("Socket disconnected: {:?}", socket.id);
+        let mut soldiers = app_state_for_disconnect.soldiers.lock().unwrap();
+        soldiers.remove(&socket.id.to_string());
+        let soldiers_num = soldiers.len();
+        socket
+            .broadcast()
+            .emit("current_soldiers", &soldiers_num)
+            .ok();
+    });
 }
 
 #[tokio::main]
@@ -77,6 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app_state = Arc::new(AppState {
         canvas: Mutex::new(vec![vec![0xFFFFFFFF; 500]; 500]),
         last_update: Mutex::new(HashMap::new()),
+        soldiers: Mutex::new(HashSet::new()),
     });
 
     let app_state_for_ns = app_state.clone();

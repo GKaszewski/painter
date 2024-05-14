@@ -1,3 +1,25 @@
-#canvas {
-  border: 1px solid black;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .rainbow-border {
+    position: relative;
+    display: inline-block;
+    border-radius: 0.5rem; /* Rounded corners */
+    padding: 5px; /* Space for the border */
+    background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+}
+.rainbow-border::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin: -5px; /* Negative margin to overlap the gradient */
+    border-radius: 0.5rem; /* Match the rounded corners */
+    background: white;
+    z-index: -1; /* Place behind the content */
+}
 }
