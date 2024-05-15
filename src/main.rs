@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use axum::{routing::get, Extension, Json, Router, ServiceExt};
+use axum::{routing::get, Extension, Json, Router};
 use chrono::{DateTime, Duration, Utc};
 use memory_stats::memory_stats;
 use serde::{Deserialize, Serialize};
@@ -13,10 +13,7 @@ use socketioxide::{
     extract::{Bin, Data, SocketRef},
     SocketIo,
 };
-use tower_governor::{
-    governor::{GovernorConfig, GovernorConfigBuilder},
-    GovernorLayer,
-};
+use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::{
     cors::{Any, CorsLayer},
     services::ServeDir,
@@ -158,7 +155,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let rate_governor = Arc::new(
         GovernorConfigBuilder::default()
-            .burst_size(6)
+            .burst_size(10)
             .per_second(10)
             .finish()
             .unwrap(),
