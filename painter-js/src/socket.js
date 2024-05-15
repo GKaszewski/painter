@@ -6,12 +6,16 @@ const wsHost = window.location.host;
 
 let socket;
 
-if (isDebug) {
-  socket = io("ws://localhost:3000");
-} else {
-  socket = io(`${wsProtocol}//${wsHost}`, {
-    transports: ["websocket"],
-  });
-}
+export const connectToWS = () => {
+  if (isDebug) {
+    socket = io("ws://localhost:3000");
+  } else {
+    socket = io(`${wsProtocol}//${wsHost}`, {
+      transports: ["websocket"],
+    });
+  }
+
+  return socket;
+};
 
 export default socket;

@@ -1,11 +1,18 @@
-import socket from "./socket.js";
 import {
   hexToU32,
   u32ToHex,
   getColorFromElementCSS,
   rgbToHex,
 } from "./utils.js";
-import { pixelSize, pixelCooldown } from "./constants.js";
+import {
+  pixelSize,
+  pixelCooldown,
+  canvasEndpoint,
+  WIDTH,
+  HEIGHT,
+} from "./constants.js";
+
+let socket = null;
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -97,36 +104,28 @@ const handleColorPicker = () => {
   });
 };
 
-handleColorPicker();
+const fetchCanvasState = async () => {
+  fetch(canvasEndpoint)
+    .then((response) => response.json())
+    .then((data) => {
+      canvasState = data;
+      drawCanvasState(data);
+    })
+    .catch((error) => {
+      alert("Error fetching canvas state from server. Please try again later.");
+    });
+};
 
 const drawCanvasState = (canvasState) => {
-  for (let y = 0; y < canvasState.length; y++) {
-    for (let x = 0; x < canvasState[y].length; x++) {
-      const color = u32ToHex(canvasState[y][x]);
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      const index = y * WIDTH + x;
+      const color = u32ToHex(canvasState[index]);
       ctx.fillStyle = color;
       ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
     }
   }
 };
-
-socket.on("init-canvas", (data) => {
-  const canvasData = JSON.parse(data);
-  drawCanvasState(canvasData);
-  canvasState = canvasData;
-});
-
-socket.on("pixel-updated", (update) => {
-  const color = u32ToHex(update.color);
-  ctx.fillStyle = color;
-  ctx.fillRect(
-    update.x * pixelSize,
-    update.y * pixelSize,
-    pixelSize,
-    pixelSize
-  );
-
-  canvasState[update.y][update.x] = update.color;
-});
 
 const checkIfCanPlacePixel = () => {
   const now = Date.now();
@@ -145,7 +144,8 @@ const handlePlacePixel = (pixelData) => {
   }
 
   socket.emit("place-pixel", pixelData);
-  canvasState[pixelData.y][pixelData.x] = pixelData.color;
+  const index = pixelData.y * WIDTH + pixelData.x;
+  canvasState[index] = pixelData.color;
   setLastPixelTime();
   pixelData = null;
 };
@@ -218,8 +218,6 @@ const handleToggleGrid = () => {
   });
 };
 
-handleToggleGrid();
-
 window.onkeydown = (event) => {
   // on enter (keycode 13 is enter)
   if (event.keyCode === 13) {
@@ -243,3 +241,27 @@ saveCanvasButton.addEventListener("click", () => {
   a.download = "canvas.png";
   a.click();
 });
+
+handleColorPicker();
+handleToggleGrid();
+
+export const handleSocketEvents = (_socket) => {
+  socket = _socket;
+  socket.on("connect", () => {
+    fetchCanvasState();
+  });
+
+  socket.on("pixel-updated", (update) => {
+    const color = u32ToHex(update.color);
+    ctx.fillStyle = color;
+    ctx.fillRect(
+      update.x * pixelSize,
+      update.y * pixelSize,
+      pixelSize,
+      pixelSize
+    );
+
+    const index = update.y * WIDTH + update.x;
+    canvasState[index] = update.color;
+  });
+};
