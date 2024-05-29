@@ -7,8 +7,9 @@
     <title>Pixel War</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
-  <body class="flex flex-col items-center justify-center min-h-screen bg-slate-100">
-    <div class="flex flex-wrap gap-2 p-2">
+  <body class="relative flex flex-col items-center justify-center min-h-screen bg-slate-100">
+    <div id="challenge" class="absolute z-10 w-full min-h-screen"></div>
+    <div class="z-20 flex flex-wrap gap-2 p-2">
       <button id="red" class="w-8 h-8 bg-red-500 border border-black shadow"></button>
       <button id="green" class="w-8 h-8 bg-green-500 border border-black shadow"></button>
       <button id="blue" class="w-8 h-8 bg-blue-500 border border-black shadow"></button>
@@ -22,20 +23,20 @@
       <button id="brown" class="w-8 h-8 bg-orange-800 border border-black shadow"></button>
       <input class="w-8 h-8 border border-black shadow" type="color" id="color-picker" value="#000000" />
     </div>
-    <p>Your selected color <span id="current-color-span" class="text-white">COLOR</span></p>
-    <div id="countdown">You can place a pixel now</div>
-    <div class="flex items-center gap-2 mx-1 my-4">
+    <p class="z-20">Your selected color <span id="current-color-span" class="text-white">COLOR</span></p>
+    <div id="countdown" class="z-20">You can place a pixel now</div>
+    <div class="z-20 flex items-center gap-2 mx-1 my-4">
       <label for="toggle-grid">Toggle Grid</label>
       <input id="toggle-grid" type="checkbox" />
       <button id="place-pixel" class="px-2 py-1 rounded-md shadow-lg bg-cyan-400 hover:bg-cyan-500 active:bg-cyan-600">Place Pixel</button>
     </div>
-    <div class="flex gap-1">
+    <div class="z-20 flex gap-1">
       <p id="coords"></p>
     </div>
-    <div class="relative p-1 rainbow-border">
+    <div class="relative z-20 p-1 rainbow-border">
       <canvas class="bg-white rounded-md" id="canvas" width="500" height="500"></canvas>
     </div>
-    <div class="flex flex-col gap-2 p-2">
+    <div class="z-20 flex flex-col gap-2 p-2">
       <p>Current soldiers: <span id="current-soldiers" class="font-bold">0</span></p>
       <button id="save-canvas" class="px-2 py-1 bg-green-400 rounded-md shadow-lg hover:bg-green-500 active:bg-green-600">Save Canvas</button>
     </div>

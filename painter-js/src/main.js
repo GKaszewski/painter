@@ -4,6 +4,7 @@ import "./counter.js";
 import { updateCountdown } from "./counter.js";
 import { checkEndpoint, pixelSize } from "./constants.js";
 import { handleSocketEvents } from "./canvas.js";
+import "./challenge.js"
 
 const isDebug = import.meta.env.VITE_IS_DEBUG === "true";
 
