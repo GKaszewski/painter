@@ -1,58 +1,88 @@
-import { connectToWS } from "./socket.js";
-import "./canvas.js";
-import "./counter.js";
-import { updateCountdown } from "./counter.js";
-import { checkEndpoint, pixelSize } from "./constants.js";
-import { handleSocketEvents } from "./canvas.js";
-import "./challenge.js"
+import { createSocketConnection } from "./infrastructure/socket-client.js";
+import { checkServer } from "./infrastructure/api.js";
+import { createCanvasRenderer } from "./ui/canvas-renderer.js";
+import { createColorPalette } from "./ui/color-palette.js";
+import { createPixelPlacer } from "./ui/pixel-placer.js";
+import { startCooldownDisplay } from "./ui/cooldown-display.js";
+import { createCanvasViewport } from "./ui/canvas-viewport.js";
+import { setPixel } from "./domain/canvas-state.js";
+import { getCanvasCoords } from "./domain/coords.js";
 
-const isDebug = import.meta.env.VITE_IS_DEBUG === "true";
-
-const currentSoldiersSpan = document.getElementById("current-soldiers");
-
-let coords = [];
-const canvas = document.getElementById("canvas");
+const canvasEl = document.getElementById("canvas");
 const coordsText = document.getElementById("coords");
-const ogCanvasStyle = canvas.style.display;
-canvas.style.display = "none";
+const currentSoldiersSpan = document.getElementById("current-soldiers");
+const statusEl = document.getElementById("connection-status");
 
-fetch(checkEndpoint)
+const savedDisplay = canvasEl.style.display;
+canvasEl.style.display = "none";
+
+let canvasState = [];
+
+const renderer = createCanvasRenderer(canvasEl);
+const palette = createColorPalette();
+
+startCooldownDisplay();
+createCanvasViewport(canvasEl);
+
+canvasEl.addEventListener("mousemove", (event) => {
+  const { x, y } = getCanvasCoords(event, canvasEl);
+  coordsText.textContent = `${x}, ${y}`;
+});
+
+document.getElementById("save-canvas").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = renderer.toDataURL();
+  a.download = "canvas.png";
+  a.click();
+});
+
+const showStatus = (message, isError) => {
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.className = isError
+    ? "text-red-500 text-sm"
+    : "text-green-500 text-sm";
+};
+
+checkServer()
   .then((response) => {
-    if (response.ok) {
-      const socket = connectToWS();
+    if (!response.ok) throw new Error("Server unavailable");
 
-      socket.on("connect", () => {
-        canvas.style.display = ogCanvasStyle;
-        console.log("connect");
-      });
+    const socket = createSocketConnection();
 
-      socket.on("error", (message) => {
-        alert(message);
-      });
+    socket.on("connect", () => {
+      canvasEl.style.display = savedDisplay;
+      showStatus("Connected", false);
+    });
 
-      socket.on("current_soldiers", (currentSoldiers) => {
-        currentSoldiersSpan.textContent = currentSoldiers;
-      });
+    socket.on("canvas_state", (data) => {
+      canvasState = data;
+      renderer.drawState(data);
+    });
 
-      handleSocketEvents(socket);
+    socket.on("error", (message) => showStatus(message, true));
 
-      requestAnimationFrame(updateCountdown);
+    socket.on("current_soldiers", (count) => {
+      currentSoldiersSpan.textContent = count;
+    });
 
-      window.addEventListener("mousemove", (event) => {
-        // get coordinates of the mouse inside the canvas
-        const rect = canvas.getBoundingClientRect();
-        const x = Math.floor((event.clientX - rect.left) / pixelSize);
-        const y = Math.floor((event.clientY - rect.top) / pixelSize);
-        coords = [x, y];
+    socket.on("pixel-updated", (update) => {
+      renderer.drawPixel(update.x, update.y, update.color);
+      setPixel(canvasState, update.x, update.y, update.color);
+    });
 
-        coordsText.textContent = `${x}, ${y}`;
-      });
-    } else {
-      throw new Error("Can't connect to the server");
-    }
+    socket.on("disconnect", () => {
+      showStatus("Disconnected — reconnecting...", true);
+    });
+
+    createPixelPlacer({
+      canvas: canvasEl,
+      renderer,
+      getColor: palette.getColor,
+      getState: () => canvasState,
+      socket,
+    });
   })
-  .catch((error) => {
-    alert(
-      "You have already connected to the server from another tab or window. Please close the other tab or window and refresh this page."
-    );
+  .catch(() => {
+    showStatus("Cannot connect to server", true);
   });

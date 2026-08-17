@@ -1,2 +1,4 @@
 /target
 .env
+/snapshots
+*.DS_Store

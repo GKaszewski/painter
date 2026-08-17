@@ -1,0 +1,26 @@
+[package]
+name = "server"
+version.workspace = true
+edition.workspace = true
+
+[features]
+default = ["socketio"]
+socketio = ["dep:socketio", "dep:socketioxide"]
+websocket = ["dep:websocket"]
+
+[dependencies]
+application = { workspace = true }
+canvas-file = { workspace = true }
+config = { workspace = true }
+config-env = { workspace = true }
+axum = { workspace = true }
+domain = { workspace = true }
+http-axum = { workspace = true }
+dotenv = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+socketio = { workspace = true, optional = true }
+socketioxide = { workspace = true, optional = true }
+websocket = { workspace = true, optional = true }

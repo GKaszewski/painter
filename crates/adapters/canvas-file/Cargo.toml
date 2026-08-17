@@ -1,0 +1,9 @@
+[package]
+name = "canvas-file"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+config = { workspace = true }
+domain = { workspace = true }
+tracing = { workspace = true }

@@ -1,0 +1,83 @@
+graph TB
+    subgraph Binary ["Server (Composition Root)"]
+        server["server<br/><i>wires adapters, starts Axum</i>"]
+    end
+
+    subgraph Application ["Application Layer"]
+        AppState["AppState"]
+        PlacePixel["canvas::place_pixel"]
+        GetState["canvas::get_state"]
+        SaveSnapshot["canvas::save_snapshot"]
+        RestoreSnapshot["canvas::restore_snapshot"]
+        Connect["soldiers::connect"]
+        Disconnect["soldiers::disconnect"]
+        InMemoryCanvas["InMemoryCanvasStore"]
+        InProcessBroadcast["InProcessBroadcaster"]
+    end
+
+    subgraph Domain ["Domain Layer (0 infra deps)"]
+        Canvas["Canvas"]
+        ValueObjects["Color | Position | PixelUpdate"]
+        BroadcastEvent["BroadcastEvent"]
+        DomainError["DomainError"]
+
+        subgraph Ports ["Port Traits"]
+            CanvasStore["CanvasStore"]
+            CanvasPersistence["CanvasPersistence"]
+            EventBroadcaster["EventBroadcaster"]
+        end
+    end
+
+    subgraph Shared ["Shared Types"]
+        Config["config<br/><i>AppConfig, ConfigSource trait</i>"]
+        ApiTypes["api-types<br/><i>PixelUpdatePayload, event constants</i>"]
+    end
+
+    subgraph Adapters ["Adapters"]
+        subgraph Transport ["Transport (driving)"]
+            SocketIO["socketio<br/><i>Socket.IO protocol</i>"]
+            WebSocket["websocket<br/><i>native WebSocket + JSON</i>"]
+        end
+
+        subgraph Infrastructure ["Infrastructure (driven)"]
+            ConfigEnv["config-env<br/><i>env var loader</i>"]
+            CanvasFile["canvas-file<br/><i>file snapshots</i>"]
+            HttpAxum["http-axum<br/><i>HTTP routes, rate limit,<br/>embedded static files</i>"]
+        end
+    end
+
+    server --> Application
+    server --> Transport
+    server --> Infrastructure
+    server --> Config
+
+    PlacePixel --> CanvasStore
+    PlacePixel --> EventBroadcaster
+    SaveSnapshot --> CanvasStore
+    SaveSnapshot --> CanvasPersistence
+    RestoreSnapshot --> CanvasStore
+    RestoreSnapshot --> CanvasPersistence
+    Connect --> EventBroadcaster
+    Disconnect --> EventBroadcaster
+
+    InMemoryCanvas -.->|implements| CanvasStore
+    InProcessBroadcast -.->|implements| EventBroadcaster
+    CanvasFile -.->|implements| CanvasPersistence
+    ConfigEnv -.->|implements| Config
+
+    SocketIO --> Application
+    WebSocket --> Application
+    SocketIO --> ApiTypes
+    HttpAxum --> Config
+
+    classDef domain fill:#e8f5e9,stroke:#2e7d32
+    classDef app fill:#e3f2fd,stroke:#1565c0
+    classDef adapter fill:#fff3e0,stroke:#e65100
+    classDef shared fill:#f3e5f5,stroke:#6a1b9a
+    classDef binary fill:#fce4ec,stroke:#c62828
+
+    class Canvas,ValueObjects,BroadcastEvent,DomainError,CanvasStore,CanvasPersistence,EventBroadcaster domain
+    class AppState,PlacePixel,GetState,SaveSnapshot,RestoreSnapshot,Connect,Disconnect,InMemoryCanvas,InProcessBroadcast app
+    class SocketIO,WebSocket,ConfigEnv,CanvasFile,HttpAxum adapter
+    class Config,ApiTypes shared
+    class server binary

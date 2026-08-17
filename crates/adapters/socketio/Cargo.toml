@@ -1,0 +1,13 @@
+[package]
+name = "socketio"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+application = { workspace = true }
+api-types = { workspace = true }
+domain = { workspace = true }
+serde_json = { workspace = true }
+socketioxide = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }

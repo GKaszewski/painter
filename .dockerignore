@@ -1,0 +1,9 @@
+target/
+painter-js/node_modules/
+painter-js/dist/
+painter-js/.env
+snapshots/
+.git/
+.claude/
+.env
+*.DS_Store

@@ -2,20 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  .rainbow-border {
-    position: relative;
-    display: inline-block;
-    background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+.canvas-viewport {
+  overflow: auto;
+  width: min(92vw, 70vh);
+  height: min(92vw, 70vh);
+  border: 2px solid #94a3b8;
+  border-radius: 4px;
+  cursor: crosshair;
 }
-.rainbow-border::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background: white;
-    z-index: -1; /* Place behind the content */
-}
+
+#canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
 }

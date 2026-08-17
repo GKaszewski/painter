@@ -6,17 +6,19 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "fmt": "prettier --write 'src/**/*.{js,ts,css,html}'",
+    "fmt:check": "prettier --check 'src/**/*.{js,ts,css,html}'"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
+    "prettier": "^3.9.6",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.2.2",
     "vite": "^5.2.0"
   },
   "dependencies": {
-    "socket.io-client": "^4.7.5",
-    "three": "^0.164.1"
+    "socket.io-client": "^4.7.5"
   }
 }

@@ -1,19 +1,24 @@
-FROM rust:1.76 as builder
+FROM oven/bun:1 AS frontend
+WORKDIR /app/painter-js
+COPY painter-js/package.json painter-js/bun.lock ./
+RUN bun install --frozen-lockfile
+COPY painter-js/ .
+RUN bun run build
+
+FROM rust:1-alpine AS builder
 WORKDIR /app
+RUN apk add --no-cache musl-dev
 
 COPY Cargo.toml Cargo.lock ./
+COPY crates/ ./crates/
 
-COPY src ./src
+RUN mkdir -p painter-js/dist && echo '<html></html>' > painter-js/dist/index.html
+RUN cargo build --release --bin server 2>&1 || true
 
-RUN cargo build --release
+COPY --from=frontend /app/painter-js/dist ./painter-js/dist
+RUN touch crates/adapters/http-axum/src/routes.rs && cargo build --release --bin server
 
-FROM rust:1.76
-WORKDIR /app
-
-COPY --from=builder /app/target/release/painter .
-COPY painter-js/dist ./dist
-COPY .env .env
-
+FROM scratch
+COPY --from=builder /app/target/release/server /painter
 EXPOSE 3000
-
-CMD ["./painter"]
+ENTRYPOINT ["/painter"]
