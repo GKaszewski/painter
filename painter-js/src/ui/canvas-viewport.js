@@ -1,9 +1,13 @@
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 40;
 
-export const createCanvasViewport = (canvas) => {
-  const viewport = canvas.parentElement;
-  const zoomLabel = document.getElementById("zoom-level");
+export const createCanvasViewport = ({
+  canvas,
+  viewport,
+  zoomIn,
+  zoomOut,
+  zoomLabel,
+}) => {
   let zoom = 1;
   let baseSize = viewport.clientWidth;
 
@@ -59,12 +63,12 @@ export const createCanvasViewport = (canvas) => {
     lastPinchDist = 0;
   });
 
-  document.getElementById("zoom-in")?.addEventListener("click", () => {
+  zoomIn?.addEventListener("click", () => {
     setZoom(zoom * 1.5);
     applyZoom();
   });
 
-  document.getElementById("zoom-out")?.addEventListener("click", () => {
+  zoomOut?.addEventListener("click", () => {
     setZoom(zoom / 1.5);
     applyZoom();
   });

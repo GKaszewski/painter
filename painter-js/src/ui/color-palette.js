@@ -14,20 +14,17 @@ const PALETTE_IDS = [
   "brown",
 ];
 
-export const createColorPalette = () => {
-  const colorPicker = document.getElementById("color-picker");
-  const currentColorSpan = document.getElementById("current-color-span");
+export const createColorPalette = ({ colorPicker, colorSpan, appState }) => {
   let activeButton = null;
 
-  let currentColor = localStorage.getItem("currentColor") || "#000000";
-  colorPicker.value = currentColor;
-  currentColorSpan.style.backgroundColor = currentColor;
+  const color = appState.get("selectedColor");
+  colorPicker.value = color;
+  colorSpan.style.backgroundColor = color;
 
   const setColor = (hex, button) => {
-    currentColor = hex;
-    currentColorSpan.textContent = hex;
-    currentColorSpan.style.backgroundColor = hex;
-    localStorage.setItem("currentColor", hex);
+    appState.set("selectedColor", hex);
+    colorSpan.textContent = hex;
+    colorSpan.style.backgroundColor = hex;
 
     if (activeButton)
       activeButton.classList.remove("ring-2", "ring-offset-2", "ring-cyan-400");
@@ -48,6 +45,4 @@ export const createColorPalette = () => {
       );
     });
   }
-
-  return { getColor: () => currentColor };
 };

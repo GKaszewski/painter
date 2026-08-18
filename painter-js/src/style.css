@@ -16,3 +16,17 @@
   image-rendering: crisp-edges;
   display: block;
 }
+
+#current-soldiers {
+  display: inline-block;
+}
+
+@keyframes soldier-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+.soldier-pop {
+  animation: soldier-pop 0.3s ease-out;
+}
