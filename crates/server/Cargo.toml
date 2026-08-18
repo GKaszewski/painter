@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [features]
-default = ["socketio"]
+default = ["websocket"]
 socketio = ["dep:socketio", "dep:socketioxide"]
 websocket = ["dep:websocket"]
 
