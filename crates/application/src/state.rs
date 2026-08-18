@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use domain::ports::{
     BroadcastReceiverInner, BroadcastSubscription, CanvasPersistence, CanvasStore, EventBroadcaster,
 };
-use domain::{BroadcastEvent, Canvas, Color, DomainError, Position};
+use domain::{BroadcastEvent, Canvas, Color, DomainError, Position, UserId};
 use tokio::sync::broadcast;
 use tracing::warn;
 
@@ -145,7 +145,7 @@ impl CanvasStore for InMemoryCanvasStore {
 }
 
 pub struct CooldownTracker {
-    entries: Mutex<HashMap<String, Instant>>,
+    entries: Mutex<HashMap<UserId, Instant>>,
     cooldown: Duration,
 }
 
@@ -157,7 +157,7 @@ impl CooldownTracker {
         }
     }
 
-    pub fn is_on_cooldown(&self, user_id: &str) -> bool {
+    pub fn is_on_cooldown(&self, user_id: &UserId) -> bool {
         let entries = acquire_lock(&self.entries);
         entries
             .get(user_id)
@@ -165,17 +165,17 @@ impl CooldownTracker {
             .unwrap_or(false)
     }
 
-    pub fn record(&self, user_id: &str) {
-        acquire_lock(&self.entries).insert(user_id.to_string(), Instant::now());
+    pub fn record(&self, user_id: &UserId) {
+        acquire_lock(&self.entries).insert(user_id.clone(), Instant::now());
     }
 
-    pub fn remove(&self, user_id: &str) {
+    pub fn remove(&self, user_id: &UserId) {
         acquire_lock(&self.entries).remove(user_id);
     }
 }
 
 pub struct SoldierTracker {
-    connected: Mutex<HashSet<String>>,
+    connected: Mutex<HashSet<UserId>>,
 }
 
 impl SoldierTracker {
@@ -185,13 +185,13 @@ impl SoldierTracker {
         }
     }
 
-    pub fn add(&self, user_id: String) -> usize {
+    pub fn add(&self, user_id: UserId) -> usize {
         let mut connected = acquire_lock(&self.connected);
         connected.insert(user_id);
         connected.len()
     }
 
-    pub fn remove(&self, user_id: &str) -> usize {
+    pub fn remove(&self, user_id: &UserId) -> usize {
         let mut connected = acquire_lock(&self.connected);
         connected.remove(user_id);
         connected.len()

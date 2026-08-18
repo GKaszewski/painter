@@ -3,7 +3,7 @@ mod common;
 use std::sync::Arc;
 
 use application::AppState;
-use domain::Color;
+use domain::{Color, UserId};
 
 fn state_with_persistence(persistence: common::FakePersistence) -> Arc<AppState> {
     let spy = common::SpyBroadcaster::new();
@@ -22,10 +22,11 @@ fn save_snapshot_persists_current_canvas() {
     let saved_ref = persistence.saved_ref();
     let state = state_with_persistence(persistence);
 
+    let user = UserId::new("user".to_string());
     application::canvas::place_pixel::execute(
         &state,
         application::canvas::place_pixel::Command {
-            user_id: "user",
+            user_id: &user,
             position: domain::Position::new(0, 0),
             color: Color::new(0xFF),
         },

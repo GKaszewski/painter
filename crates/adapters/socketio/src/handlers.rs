@@ -3,7 +3,7 @@ use std::sync::Arc;
 use api_types::{self, PixelUpdatePayload};
 use application::AppState;
 use application::canvas::place_pixel;
-use domain::{BroadcastEvent, BroadcastSubscription, Color, Position};
+use domain::{BroadcastEvent, BroadcastSubscription, Color, Position, UserId};
 use socketioxide::extract::{Data, SocketRef};
 use tracing::info;
 
@@ -28,8 +28,8 @@ fn send_canvas_state(socket: &SocketRef, state: &AppState) {
 }
 
 fn register_soldier(state: &AppState, socket: &SocketRef) {
-    let socket_id = socket.id.to_string();
-    application::soldiers::connect::execute(state, socket_id);
+    let user_id = UserId::new(socket.id.to_string());
+    application::soldiers::connect::execute(state, user_id);
 }
 
 fn spawn_broadcast_forwarder(socket: SocketRef, mut subscription: BroadcastSubscription) {
@@ -71,9 +71,9 @@ fn handle_place_pixel(socket: &SocketRef, state: &AppState, payload: PixelUpdate
 
     info!("Received pixel update: {position} color={}", color.as_u32());
 
-    let socket_id = socket.id.to_string();
+    let user_id = UserId::new(socket.id.to_string());
     let command = place_pixel::Command {
-        user_id: &socket_id,
+        user_id: &user_id,
         position,
         color,
     };
@@ -97,8 +97,8 @@ fn register_disconnect_handler(socket: &SocketRef, state: Arc<AppState>) {
 
 fn handle_disconnect(socket: &SocketRef, state: &AppState) {
     info!("Socket disconnected: {:?}", socket.id);
-    let socket_id = socket.id.to_string();
-    application::soldiers::disconnect::execute(state, &socket_id);
+    let user_id = UserId::new(socket.id.to_string());
+    application::soldiers::disconnect::execute(state, &user_id);
 }
 
 fn emit_error(socket: &SocketRef, message: &str) {

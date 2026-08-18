@@ -8,6 +8,6 @@ pub use canvas::Canvas;
 pub use errors::DomainError;
 pub use events::BroadcastEvent;
 pub use ports::BroadcastSubscription;
-pub use value_objects::{Color, PixelUpdate, Position};
+pub use value_objects::{Color, PixelUpdate, Position, UserId};
 
 pub const COOLDOWN_MESSAGE: &str = "You can only place one pixel per minute";

@@ -1,11 +1,12 @@
 use std::io::Write;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::time::Duration;
 
 use axum::extract::State;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::response::IntoResponse;
-use domain::{BroadcastEvent, BroadcastSubscription, Color, Position};
+use domain::{BroadcastEvent, BroadcastSubscription, Color, Position, UserId};
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use futures::{SinkExt, StreamExt, stream::SplitSink};
@@ -29,10 +30,12 @@ pub async fn ws_upgrade(
 async fn handle_connection(socket: WebSocket, state: Arc<WsState>) {
     let (mut sender, mut receiver) = socket.split();
 
-    let connection_id = state
-        .connection_counter
-        .fetch_add(1, Ordering::Relaxed)
-        .to_string();
+    let connection_id = UserId::new(
+        state
+            .connection_counter
+            .fetch_add(1, Ordering::Relaxed)
+            .to_string(),
+    );
 
     info!("WebSocket connected: {connection_id}");
 
@@ -105,11 +108,16 @@ fn gzip_compress(data: &[u8]) -> Option<Vec<u8>> {
     encoder.finish().ok()
 }
 
+const PING_INTERVAL: Duration = Duration::from_secs(30);
+
 async fn run_send_loop(
     mut sender: WsSender,
     mut subscription: BroadcastSubscription,
     mut error_receiver: mpsc::UnboundedReceiver<String>,
 ) {
+    let mut ping_interval = tokio::time::interval(PING_INTERVAL);
+    ping_interval.tick().await;
+
     loop {
         tokio::select! {
             Some(event) = subscription.recv() => {
@@ -120,6 +128,11 @@ async fn run_send_loop(
             }
             Some(error_json) = error_receiver.recv() => {
                 if sender.send(Message::Text(error_json.into())).await.is_err() {
+                    break;
+                }
+            }
+            _ = ping_interval.tick() => {
+                if sender.send(Message::Ping(Vec::new().into())).await.is_err() {
                     break;
                 }
             }
@@ -143,7 +156,7 @@ fn serialize_broadcast_event(event: &BroadcastEvent) -> Option<String> {
 fn handle_client_message(
     state: &AppState,
     error_sender: &mpsc::UnboundedSender<String>,
-    connection_id: &str,
+    connection_id: &UserId,
     text: &str,
 ) {
     let Ok(message) = serde_json::from_str::<ClientMessage>(text) else {
@@ -160,7 +173,7 @@ fn handle_client_message(
 fn handle_place_pixel(
     state: &AppState,
     error_sender: &mpsc::UnboundedSender<String>,
-    connection_id: &str,
+    connection_id: &UserId,
     x: u32,
     y: u32,
     color: u32,

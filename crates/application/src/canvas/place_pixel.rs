@@ -1,9 +1,9 @@
-use domain::{BroadcastEvent, Color, PixelUpdate, Position};
+use domain::{BroadcastEvent, Color, PixelUpdate, Position, UserId};
 
 use crate::{AppState, ApplicationError};
 
 pub struct Command<'a> {
-    pub user_id: &'a str,
+    pub user_id: &'a UserId,
     pub position: Position,
     pub color: Color,
 }

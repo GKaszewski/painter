@@ -1,14 +1,18 @@
 mod common;
 
 use application::canvas::place_pixel::{Command, Outcome};
-use domain::{BroadcastEvent, Color, Position};
+use domain::{BroadcastEvent, Color, Position, UserId};
+
+fn uid(id: &str) -> UserId {
+    UserId::new(id.to_string())
+}
 
 macro_rules! place {
     ($state:expr, $user:expr, $x:expr, $y:expr, $color:expr) => {
         application::canvas::place_pixel::execute(
             &$state,
             Command {
-                user_id: $user,
+                user_id: &uid($user),
                 position: Position::new($x, $y),
                 color: Color::new($color),
             },
