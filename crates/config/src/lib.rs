@@ -24,6 +24,7 @@ pub struct ServerConfig {
     pub address: String,
     pub port: u16,
     pub enable_cors: bool,
+    pub max_concurrent_canvas_sends: usize,
 }
 
 #[derive(Debug, Clone)]

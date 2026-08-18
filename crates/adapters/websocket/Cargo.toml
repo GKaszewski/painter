@@ -7,6 +7,7 @@ edition.workspace = true
 application = { workspace = true }
 domain = { workspace = true }
 axum = { workspace = true, features = ["ws"] }
+flate2 = { workspace = true }
 futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

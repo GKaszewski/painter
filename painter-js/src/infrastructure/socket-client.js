@@ -13,6 +13,13 @@ const createSocketIoTransport = () => {
   };
 };
 
+const decompressGzip = async (buffer) => {
+  const stream = new Blob([buffer])
+    .stream()
+    .pipeThrough(new DecompressionStream("gzip"));
+  return new Response(stream).arrayBuffer();
+};
+
 const createWebSocketTransport = () => {
   const handlers = {};
   const wsUrl = isDebug
@@ -38,9 +45,10 @@ const createWebSocketTransport = () => {
 
   ws.addEventListener("open", () => dispatch("connect"));
 
-  ws.addEventListener("message", (event) => {
+  ws.addEventListener("message", async (event) => {
     if (event.data instanceof ArrayBuffer) {
-      const pixels = new Uint32Array(event.data);
+      const decompressed = await decompressGzip(event.data);
+      const pixels = new Uint32Array(decompressed);
       dispatch("canvas_state", Array.from(pixels));
       return;
     }

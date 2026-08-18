@@ -127,7 +127,7 @@ fn build_app(
     state: Arc<AppState>,
     config: &AppConfig,
 ) -> Result<axum::Router, Box<dyn std::error::Error>> {
-    let ws_router = websocket::build_router(state);
+    let ws_router = websocket::build_router(state, config.server.max_concurrent_canvas_sends);
     let http_router = http_axum::build_router(config.server.enable_cors, &config.rate_limit)?;
     Ok(ws_router.merge(http_router))
 }

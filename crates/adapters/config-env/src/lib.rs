@@ -14,6 +14,7 @@ const DEFAULT_BROADCAST_CAPACITY: usize = 1024;
 const DEFAULT_SNAPSHOT_INTERVAL_SECS: u64 = 300;
 const DEFAULT_SNAPSHOT_MAX: usize = 5;
 const DEFAULT_SNAPSHOT_DIR: &str = "snapshots/";
+const DEFAULT_MAX_CONCURRENT_CANVAS_SENDS: usize = 20;
 
 pub struct EnvConfigSource;
 
@@ -24,6 +25,10 @@ impl ConfigSource for EnvConfigSource {
                 address: env_or("ADDRESS", DEFAULT_ADDRESS),
                 port: parse_env("PORT", DEFAULT_PORT)?,
                 enable_cors: parse_bool_env("ENABLE_CORS", true),
+                max_concurrent_canvas_sends: parse_env(
+                    "MAX_CONCURRENT_CANVAS_SENDS",
+                    DEFAULT_MAX_CONCURRENT_CANVAS_SENDS,
+                )?,
             },
             canvas: CanvasConfig {
                 width: parse_env("CANVAS_WIDTH", DEFAULT_CANVAS_WIDTH)?,

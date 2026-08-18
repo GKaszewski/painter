@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
@@ -5,8 +6,10 @@ use axum::extract::State;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::response::IntoResponse;
 use domain::{BroadcastEvent, BroadcastSubscription, Color, Position};
+use flate2::Compression;
+use flate2::write::GzEncoder;
 use futures::{SinkExt, StreamExt, stream::SplitSink};
-use tokio::sync::mpsc;
+use tokio::sync::{Semaphore, mpsc};
 use tracing::{error, info};
 
 use crate::WsState;
@@ -36,7 +39,7 @@ async fn handle_connection(socket: WebSocket, state: Arc<WsState>) {
     // Subscribe before snapshotting to avoid missing updates
     let subscription = state.app_state.broadcaster().subscribe();
 
-    if !send_canvas_snapshot(&mut sender, &state.app_state).await {
+    if !send_canvas_snapshot(&mut sender, &state.app_state, &state.canvas_send_semaphore).await {
         return;
     }
 
@@ -67,10 +70,39 @@ async fn handle_connection(socket: WebSocket, state: Arc<WsState>) {
     application::soldiers::disconnect::execute(&state.app_state, &connection_id);
 }
 
-async fn send_canvas_snapshot(sender: &mut WsSender, state: &AppState) -> bool {
+async fn send_canvas_snapshot(
+    sender: &mut WsSender,
+    state: &AppState,
+    semaphore: &Semaphore,
+) -> bool {
+    let Ok(_permit) = semaphore.acquire().await else {
+        return false;
+    };
+
     let pixels = application::canvas::get_state::execute(state);
-    let bytes = Color::collect_as_bytes(&pixels);
-    sender.send(Message::Binary(bytes.into())).await.is_ok()
+    let raw_bytes = Color::collect_as_bytes(&pixels);
+
+    let Some(compressed) = gzip_compress(&raw_bytes) else {
+        error!("Failed to compress canvas snapshot");
+        return false;
+    };
+
+    info!(
+        "Sending canvas snapshot: {}KB raw -> {}KB gzip",
+        raw_bytes.len() / 1024,
+        compressed.len() / 1024
+    );
+
+    sender
+        .send(Message::Binary(compressed.into()))
+        .await
+        .is_ok()
+}
+
+fn gzip_compress(data: &[u8]) -> Option<Vec<u8>> {
+    let mut encoder = GzEncoder::new(Vec::new(), Compression::fast());
+    encoder.write_all(data).ok()?;
+    encoder.finish().ok()
 }
 
 async fn run_send_loop(
