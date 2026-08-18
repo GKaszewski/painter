@@ -173,7 +173,9 @@ checkServer()
     socket.on("connect", () => bus.emit("connect"));
     socket.on("canvas_state", (data) => bus.emit("canvas_state", data));
     socket.on("pixel-updated", (data) => bus.emit("pixel-updated", data));
-    socket.on("current_soldiers", (count) => bus.emit("current_soldiers", count));
+    socket.on("current_soldiers", (count) =>
+      bus.emit("current_soldiers", count),
+    );
     socket.on("error", (message) => bus.emit("error", message));
     socket.on("disconnect", () => bus.emit("disconnect"));
 
